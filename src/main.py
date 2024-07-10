@@ -1,12 +1,9 @@
 from evdev import list_devices, InputDevice, categorize, ecodes
-from periphery import GPIO, PWM
 import numpy as np
-import time
 import json
 import serial
-from pprint import pprint
-import random
-
+import traceback
+from time import sleep
 
 
 CENTER_TOLERANCE = 20
@@ -14,6 +11,7 @@ STICK_MAX = 255
 
 speed_setpoint = 0.0
 steering_setpoint = 0.0
+depower_setpoint = 0.0
 
 dev = InputDevice( list_devices()[0] )
 axis = {
@@ -29,16 +27,15 @@ axis = {
 }
 
 if __name__ == "__main__":
+    ser  = serial.Serial("/dev/ttyUSB0", baudrate= 115200, 
+        timeout=2.5, 
+        parity=serial.PARITY_NONE, 
+        bytesize=serial.EIGHTBITS, 
+        stopbits=serial.STOPBITS_ONE
+        )
     try:
         print ("Ready...")
-        ser  = serial.Serial("ttyUSB0", baudrate= 115200, 
-            timeout=2.5, 
-            parity=serial.PARITY_NONE, 
-            bytesize=serial.EIGHTBITS, 
-            stopbits=serial.STOPBITS_ONE
-            )
         data = {}
-        data["operation"] = "sequence"
         for event in dev.read_loop():
             #read stick axis movement
             if event.type == ecodes.EV_ABS:
@@ -57,7 +54,7 @@ if __name__ == "__main__":
                     if axis[ event.code ] == 'rs_y':
                         depower_setpoint = value
 
-                    if axis[ event.code ] == 'ls_y' or axis[ event.code ] == 'rs_x':
+                    if axis[ event.code ] == 'ls_y' or axis[ event.code ] == 'rs_x' or axis[event.code] == 'rs_y':
                         right_percentage = np.clip(speed_setpoint + steering_setpoint + depower_setpoint, -1.0, 1.0)
                         left_percentage = np.clip(speed_setpoint - steering_setpoint + depower_setpoint, -1.0, 1.0)
                         middle_percentage = speed_setpoint
@@ -67,19 +64,24 @@ if __name__ == "__main__":
                         data["r"] = right_percentage
                         data["e"] = 1
 
-                        data=json.dumps(data)
-                        print (data)
+                        data_json=json.dumps(data)
+                        print (data_json)
                         if ser.isOpen():
-                            ser.write(data.encode('ascii'))
+                            ser.write(data_json.encode('ascii'))
                             ser.flush()
                             try:
-                                incoming = ser.readline().decode("utf-8")
-                                print (incoming)
+                                incoming = "empty"
+                                while not incoming == "":
+                                    incoming = ser.readline().decode('utf-8')
+                                    print ("incoming", incoming)
                             except Exception as e:
                                 print(e)
                                 pass
                         else:
                             print ("opening error")
+            sleep(0.01)
     except Exception as e:
+        print("help")
+        traceback.print_exc()
         print(e)
         ser.close()
