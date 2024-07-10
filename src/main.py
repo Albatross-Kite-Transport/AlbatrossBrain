@@ -33,7 +33,6 @@ if __name__ == "__main__":
         bytesize=serial.EIGHTBITS, 
         stopbits=serial.STOPBITS_ONE
         )
-    sleep(1)
     try:
         print ("Ready...")
         data = {}
@@ -58,9 +57,9 @@ if __name__ == "__main__":
                         left_percentage = np.clip(speed_setpoint - steering_setpoint + depower_setpoint, -1.0, 1.0)
                         middle_percentage = speed_setpoint
 
-                        data["m"] = middle_percentage
-                        data["l"] = left_percentage
-                        data["r"] = right_percentage
+                        data["m"] = round(middle_percentage, 4)
+                        data["l"] = round(left_percentage, 4)
+                        data["r"] = round(right_percentage, 4)
                         data["e"] = 1
 
                         data_json=json.dumps(data)
@@ -68,7 +67,6 @@ if __name__ == "__main__":
                         if ser.isOpen():
                             ser.write(data_json.encode('ascii'))
                             ser.write("\n".encode('ascii'))
-                            sleep(0.01)
                             try:
                                 if ser.inWaiting() > 0:
                                     incoming = ser.readline().decode('utf-8')
@@ -78,7 +76,6 @@ if __name__ == "__main__":
                                 pass
                         else:
                             print ("opening error")
-            sleep(0.01)
     except Exception as e:
         traceback.print_exc()
         print(e)
