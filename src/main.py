@@ -33,6 +33,7 @@ if __name__ == "__main__":
         bytesize=serial.EIGHTBITS, 
         stopbits=serial.STOPBITS_ONE
         )
+    sleep(1)
     try:
         print ("Ready...")
         data = {}
@@ -45,8 +46,6 @@ if __name__ == "__main__":
                         value = 0
                     if axis[event.code] in ['ls_y', 'rs_y']:
                         value = -value
-                    print(axis[event.code], " ", value)
-
                     if axis[ event.code ] == 'ls_y':
                         speed_setpoint = value
                     if axis[ event.code ] == 'rs_x':
@@ -65,13 +64,13 @@ if __name__ == "__main__":
                         data["e"] = 1
 
                         data_json=json.dumps(data)
-                        print (data_json)
+                        # print (data_json)
                         if ser.isOpen():
                             ser.write(data_json.encode('ascii'))
-                            ser.flush()
+                            ser.write("\n".encode('ascii'))
+                            sleep(0.01)
                             try:
-                                incoming = "empty"
-                                while not incoming == "":
+                                if ser.inWaiting() > 0:
                                     incoming = ser.readline().decode('utf-8')
                                     print ("incoming", incoming)
                             except Exception as e:
@@ -81,7 +80,6 @@ if __name__ == "__main__":
                             print ("opening error")
             sleep(0.01)
     except Exception as e:
-        print("help")
         traceback.print_exc()
         print(e)
         ser.close()
