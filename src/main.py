@@ -6,8 +6,8 @@ import traceback
 from time import sleep
 
 
-CENTER_TOLERANCE = 20
-STICK_MAX = 255
+CENTER_TOLERANCE = 0.0
+STICK_MAX = 255.0
 
 speed_setpoint = 0.0
 steering_setpoint = 0.0
@@ -36,16 +36,17 @@ if __name__ == "__main__":
     try:
         print ("Ready...")
         data = {}
-        for event in dev.read_loop():
+        while True:
+            event = dev.read_one()
             #read stick axis movement
-            if event.type == ecodes.EV_ABS:
+            if event != None and event.type == ecodes.EV_ABS:
                 if not event.code in [3, 4] and axis[ event.code ] in [ 'ls_x', 'ls_y', 'rs_x', 'rs_y' ]:
                     value = (event.value - STICK_MAX/2 ) / (STICK_MAX/2)
                     if abs( value ) <= CENTER_TOLERANCE/(STICK_MAX/2):
                         value = 0
                     if axis[event.code] in ['ls_y', 'rs_y']:
                         value = -value
-                    if axis[ event.code ] == 'ls_y':
+                    if axis[ event.code ] == 'ls_y': # temporarily switch ls and rs
                         speed_setpoint = value
                     if axis[ event.code ] == 'rs_x':
                         steering_setpoint = value
@@ -67,15 +68,12 @@ if __name__ == "__main__":
                         if ser.isOpen():
                             ser.write(data_json.encode('ascii'))
                             ser.write("\n".encode('ascii'))
-                            try:
-                                if ser.inWaiting() > 0:
-                                    incoming = ser.readline().decode('utf-8')
-                                    print ("incoming", incoming)
-                            except Exception as e:
-                                print(e)
-                                pass
                         else:
                             print ("opening error")
+            if ser.inWaiting() > 0:
+                incoming = ser.readline().decode('utf-8')
+                print ("incoming", incoming)
+                # decode incoming into pandas, plot graph, figure out whats happening.
     except Exception as e:
         traceback.print_exc()
         print(e)
