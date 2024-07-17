@@ -24,6 +24,7 @@ if __name__ == "__main__":
         # print (data_json)
 
         # receive data
+        start_dataframe_time = 0.0
         start_time = time()
         stopped = False
         while not stopped:
@@ -47,9 +48,13 @@ if __name__ == "__main__":
                 incoming_struct = json.loads(incoming_json)
                 print ("incoming", incoming_json)
                 stopped = time() - start_time > 6.0
-                incoming = pd.DataFrame([incoming_struct])
-                measurement_data = pd.concat([measurement_data, incoming], ignore_index=True)
-                print(measurement_data.head())
+                if incoming_struct[motor] == 1.0:
+                    incoming_struct['time'] = incoming_struct['t']/1000 - start_dataframe_time
+                    incoming = pd.DataFrame([incoming_struct])
+                    measurement_data = pd.concat([measurement_data, incoming], ignore_index=True)
+                    print(measurement_data.head())
+                else:
+                    start_dataframe_time = time()
             sleep(0.01)
         
         # # stop motor
