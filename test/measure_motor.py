@@ -24,18 +24,21 @@ if __name__ == "__main__":
         # print (data_json)
 
         # receive data
-        start_dataframe_time = 0.0
         start_time = time()
+        start_receive_time = time()
         stopped = False
+        first_measure = True
+        first_measure_time = 0.0
         while not stopped:
-            print("loop")
             if time() - start_time < 1.0 or time() - start_time > 5.0:
                 data[motor] = 0.0
                 data["e"] = 0
+                data["md"] = 0
                 data_json = json.dumps(data)
             else:
                 data[motor] = 1.0
                 data["e"] = 1
+                data["md"] = 0
                 data_json = json.dumps(data)
             if ser.isOpen():
                 print("writing ", data)
@@ -43,19 +46,28 @@ if __name__ == "__main__":
                 ser.write("\n".encode('ascii'))
             else:
                 print ("opening error")
-            if ser.inWaiting() > 0:
-                incoming_json = ser.readline().decode('utf-8')
-                incoming_struct = json.loads(incoming_json)
-                print ("incoming", incoming_json)
-                stopped = time() - start_time > 6.0
-                if incoming_struct[motor] == 1.0:
-                    incoming_struct['time'] = incoming_struct['t']/1000 - start_dataframe_time
-                    incoming = pd.DataFrame([incoming_struct])
-                    measurement_data = pd.concat([measurement_data, incoming], ignore_index=True)
-                    print(measurement_data.head())
-                else:
-                    start_dataframe_time = time()
-            sleep(0.01)
+            while time() - start_receive_time < 0.01:
+                pass
+            start_receive_time = time()
+            stopped = time() - start_time > 6.0
+            while True:
+                if ser.inWaiting() > 0:
+                    incoming_json = ser.readline().decode('utf-8')
+                    incoming_struct = json.loads(incoming_json)
+                    if first_measure:
+                        first_measure_time = incoming_struct["t"]
+                        first_measure = False
+                    incoming_struct["time"] = incoming_struct["t"] - first_measure_time
+                    print ("incoming", incoming_json)
+                    if incoming_struct[motor] == 1.0:
+                        incoming = pd.DataFrame([incoming_struct])
+                        measurement_data = pd.concat([measurement_data, incoming], ignore_index=True)
+                        print(measurement_data.head())
+                    break
+                elif time() - start_receive_time > 0.01:  # Check if the timeout has been reached
+                    print("No data received within 0.01 seconds.")
+                    break  # Exit the loop if timeout is reached
+            # print(stopped)
         
         # # stop motor
         # data[motor] = 0.0
@@ -69,7 +81,7 @@ if __name__ == "__main__":
         #     else:
         #         print ("opening error")
 
-        measurement_data.to_csv("measurement_data.csv")
+        measurement_data.to_csv("measurement_data1.csv")
     except Exception as e:
         print(e)
         # stop motor
