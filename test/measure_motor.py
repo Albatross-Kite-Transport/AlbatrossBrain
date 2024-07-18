@@ -54,7 +54,7 @@ if __name__ == "__main__":
                 if ser.inWaiting() > 0:
                     incoming_json = ser.readline().decode('utf-8')
                     incoming_struct = json.loads(incoming_json)
-                    if first_measure:
+                    if first_measure and incoming_struct[motor] == 1.0:
                         first_measure_time = incoming_struct["t"]
                         first_measure = False
                     incoming_struct["time"] = incoming_struct["t"] - first_measure_time
