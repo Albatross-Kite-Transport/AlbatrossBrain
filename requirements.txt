@@ -1,3 +1,6 @@
 evdev
 numpy
 pyserial
+pandas
+scipy
+matplotlib

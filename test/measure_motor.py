@@ -8,7 +8,6 @@ incoming = pd.DataFrame()
 measurement_data = pd.DataFrame()
 motor = "m"
 
-
 if __name__ == "__main__":
     ser  = serial.Serial("/dev/ttyUSB0", baudrate= 115200, 
         timeout=2.5, 
@@ -59,7 +58,6 @@ if __name__ == "__main__":
                 pass
             start_receive_time = time()
             stopped = time() - start_time > full_gass_time + 2.0
-            print(stopped)
             while True:
                 if ser.inWaiting() > 0:
                     incoming_json = ser.readline().decode('utf-8')
@@ -79,7 +77,6 @@ if __name__ == "__main__":
                 elif time() - start_receive_time > 0.01:  # Check if the timeout has been reached
                     print("No data received within 0.01 seconds.")
                     break  # Exit the loop if timeout is reached
-            print(stopped)
         
         # # stop motor
         # data[motor] = 0.0
@@ -93,7 +90,7 @@ if __name__ == "__main__":
         #     else:
         #         print ("opening error")
 
-        measurement_data.to_csv("chair_middle.csv")
+        measurement_data.to_csv("pid.csv")
     except Exception as e:
         print(e)
         # stop motor
