@@ -14,6 +14,7 @@ def handle_serial():
     while True:
         sleep(0.01)
         if ser.isOpen():
+            # print("outgoing ", data_json)
             ser.write(data_json.encode('ascii'))
             ser.write("\n".encode('ascii'))
         else:
@@ -55,7 +56,7 @@ def handle_joystick_inputs():
         ecodes.ABS_HAT0X: 'dpad_x', # -1 - 1
         ecodes.ABS_HAT0Y: 'dpad_y'
     }
-    max_speed = 0.5
+    max_speed = 1.0
     data = {}
     for event in dev.read_loop():
         #read stick axis movement

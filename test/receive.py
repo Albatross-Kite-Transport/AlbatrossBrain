@@ -14,7 +14,8 @@ if __name__ == "__main__":
     
     try:
         data["e"] = 1
-        data["r"] = 0.0
+        data["m"] = -0.1
+        data["md"] = 0
         data_json=json.dumps(data)
 
         while True:
@@ -41,5 +42,9 @@ if __name__ == "__main__":
 
         print("stopping motor...")
         if ser.isOpen():
-            ser.write(data_json.encode('ascii'))
-            ser.write("\n".encode('ascii'))
+            for i in range(10):
+                ser.write(data_json.encode('ascii'))
+                ser.write("\n".encode('ascii'))
+                sleep(0.1)
+        else:
+            print("opening error")
