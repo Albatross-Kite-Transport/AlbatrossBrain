@@ -8,6 +8,7 @@ incoming = pd.DataFrame()
 measurement_data = pd.DataFrame()
 motor = "m"
 
+
 if __name__ == "__main__":
     ser  = serial.Serial("/dev/ttyUSB0", baudrate= 115200, 
         timeout=2.5, 
@@ -17,8 +18,9 @@ if __name__ == "__main__":
         )
     
     try:
+        full_gass_time = 10.0
         # send max speed
-        data[motor] = 1.0
+        data[motor] = -1.0
         data["e"] = 1
         data_json=json.dumps(data)
         # print (data_json)
@@ -29,16 +31,23 @@ if __name__ == "__main__":
         stopped = False
         first_measure = True
         first_measure_time = 0.0
+        first_measure_step = 0
+        last_step = 0
         while not stopped:
-            if time() - start_time < 1.0 or time() - start_time > 5.0:
+            if time() - start_time < 1.0:
+                data[motor] = 0.0
+                data["e"] = 1
+                data["md"] = 1
+                data_json = json.dumps(data)
+            elif time() - start_time > 1.0 + full_gass_time:
                 data[motor] = 0.0
                 data["e"] = 0
                 data["md"] = 0
                 data_json = json.dumps(data)
             else:
-                data[motor] = 1.0
+                data[motor] = 0.0
                 data["e"] = 1
-                data["md"] = 0
+                data["md"] = 1
                 data_json = json.dumps(data)
             if ser.isOpen():
                 print("writing ", data)
@@ -49,17 +58,19 @@ if __name__ == "__main__":
             while time() - start_receive_time < 0.01:
                 pass
             start_receive_time = time()
-            stopped = time() - start_time > 6.0
+            stopped = time() - start_time > full_gass_time + 2.0
             while True:
                 if ser.inWaiting() > 0:
                     incoming_json = ser.readline().decode('utf-8')
                     incoming_struct = json.loads(incoming_json)
-                    if first_measure and incoming_struct[motor] == 1.0:
+                    if first_measure and incoming_struct[motor] == -1.0:
                         first_measure_time = incoming_struct["t"]
+                        first_measure_step = incoming_struct["sm"]
                         first_measure = False
+                    last_step = incoming_struct["sm"]
                     incoming_struct["time"] = incoming_struct["t"] - first_measure_time
                     print ("incoming", incoming_json)
-                    if incoming_struct[motor] == 1.0:
+                    if time() - start_time < 1.0 + full_gass_time:
                         incoming = pd.DataFrame([incoming_struct])
                         measurement_data = pd.concat([measurement_data, incoming], ignore_index=True)
                         print(measurement_data.head())
@@ -67,7 +78,6 @@ if __name__ == "__main__":
                 elif time() - start_receive_time > 0.01:  # Check if the timeout has been reached
                     print("No data received within 0.01 seconds.")
                     break  # Exit the loop if timeout is reached
-            # print(stopped)
         
         # # stop motor
         # data[motor] = 0.0
@@ -81,7 +91,7 @@ if __name__ == "__main__":
         #     else:
         #         print ("opening error")
 
-        measurement_data.to_csv("measurement_data1.csv")
+        measurement_data.to_csv("pid.csv")
     except Exception as e:
         print(e)
         # stop motor
