@@ -1,5 +1,6 @@
 import serial, json
 from time import time, sleep
+import traceback
 
 data = {}
 incoming_json = ""
@@ -14,26 +15,36 @@ if __name__ == "__main__":
     
     try:
         data["e"] = 1
-        data["m"] = -0.1
+        data["m"] = 0.0
+        data["l"] = 0.0
+        data["r"] = 0.0
         data["md"] = 0
         data_json=json.dumps(data)
 
         while True:
-            print("sending")
+            print("sending...")
             if ser.isOpen():
                 ser.write(data_json.encode('ascii'))
                 ser.write("\n".encode('ascii'))
             else:
                 print ("opening error")
-            if ser.inWaiting() > 0:
-                incoming_json = ser.readline().decode('utf-8')
-                incoming_struct = json.loads(incoming_json)
-                print ("incoming", incoming_json)
-            sleep(0.2)
+            
+            start_time = time()
+            while time() - start_time < 0.2:
+                if ser.inWaiting() > 0:
+                    incoming_json = ser.readline().decode('utf-8')
+
+                    print ("Incoming: \t", incoming_json)
+                    try:
+                        incoming_struct = json.loads(incoming_json)
+                    except json.decoder.JSONDecodeError as _:
+                        # print("unable to decode")
+                        pass
         
 
     except Exception as e:
         print(e)
+        traceback.print_exc()
         data["e"] = 0
         data["l"] = 0
         data["m"] = 0

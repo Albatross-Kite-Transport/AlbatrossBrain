@@ -12,7 +12,7 @@ data_json = ""
 def handle_serial():
     global data_json
     while True:
-        sleep(0.01)
+        sleep(0.2)
         if ser.isOpen():
             # print("outgoing ", data_json)
             ser.write(data_json.encode('ascii'))
@@ -23,11 +23,10 @@ def handle_serial():
         while True:
             if ser.in_waiting > 0:  # Check if there is data waiting to be read
                 incoming = ser.readline().decode('utf-8').strip()  # Read the line and decode it
-                print(incoming)
+                # print(incoming)
                 # print("Received after ", time() - start_time)
                 break  # Exit the loop once data is received
             elif time() - start_time > 0.1:  # Check if the timeout has been reached
-                print("No data received within 0.1 seconds.")
                 break  # Exit the loop if timeout is reached
             else:
                 sleep(0.001)
@@ -44,34 +43,52 @@ def handle_joystick_inputs():
     left_percentage = 0.0
     middle_percentage = 0.0
 
-    dev = InputDevice( list_devices()[0] )
-    axis = {
-        ecodes.ABS_X: 'ls_x', # 0 - 255
-        ecodes.ABS_Y: 'ls_y',
-        ecodes.ABS_Z: 'rs_x',
-        ecodes.ABS_RZ: 'rs_y',
-        ecodes.ABS_BRAKE: 'lt',
-        ecodes.ABS_GAS: 'rt',
+    pc = True
+    if pc: device=2
+    else: device = 0
+    dev = InputDevice( list_devices()[device] )
+    if pc:
+        axis = {
+            ecodes.ABS_X: 'ls_x', # 0 - 255
+            ecodes.ABS_Y: 'ls_y',
+            ecodes.ABS_RX: 'rs_x',
+            ecodes.ABS_RY: 'rs_y',
+            ecodes.ABS_BRAKE: 'lt',
+            ecodes.ABS_GAS: 'rt',
 
-        ecodes.ABS_HAT0X: 'dpad_x', # -1 - 1
-        ecodes.ABS_HAT0Y: 'dpad_y'
-    }
+            ecodes.ABS_HAT0X: 'dpad_x', # -1 - 1
+            ecodes.ABS_HAT0Y: 'dpad_y'
+        }
+    else:
+        axis = {
+            ecodes.ABS_X: 'ls_x', # 0 - 255
+            ecodes.ABS_Y: 'ls_y',
+            ecodes.ABS_Z: 'rs_x',
+            ecodes.ABS_RZ: 'rs_y',
+            ecodes.ABS_BRAKE: 'lt',
+            ecodes.ABS_GAS: 'rt',
+
+            ecodes.ABS_HAT0X: 'dpad_x', # -1 - 1
+            ecodes.ABS_HAT0Y: 'dpad_y'
+        }
     max_speed = 1.0
     data = {}
     for event in dev.read_loop():
         #read stick axis movement
         if event != None and event.type == ecodes.EV_ABS:
-            if not event.code in [3, 4] and axis[ event.code ] in [ 'ls_x', 'ls_y', 'rs_x', 'rs_y' ]:
+            # print(event)
+            if event.code in axis and axis[ event.code ] in [ 'ls_x', 'ls_y', 'rs_x', 'rs_y' ]:
                 value = (event.value - STICK_MAX/2 ) / (STICK_MAX/2)
                 if abs( value ) <= CENTER_TOLERANCE/(STICK_MAX/2):
                     value = 0
                 if axis[event.code] in ['ls_y', 'rs_y']:
                     value = -value
-                if axis[ event.code ] == 'ls_y': # temporarily switch ls and rs
+                if axis[ event.code ] == 'ls_y':
                     speed_setpoint = value
                 if axis[ event.code ] == 'rs_x':
                     steering_setpoint = value
                 if axis[ event.code ] == 'rs_y':
+                    # print(value)
                     depower_setpoint = value
 
                 if axis[ event.code ] == 'ls_y' or axis[ event.code ] == 'rs_x' or axis[event.code] == 'rs_y':
@@ -98,8 +115,7 @@ def handle_joystick_inputs():
                     data["Kd"] = 0.0
                     data["md"] = 1
                     data_json=json.dumps(data)
-                    # print(len(data_json))
-                    # print(data_json)
+                    print(data_json)
 
 if __name__ == "__main__":
     ser  = serial.Serial("/dev/ttyUSB0", baudrate= 115200, 

@@ -18,13 +18,7 @@ if __name__ == "__main__":
     
     try:
         full_gass_time = 10.0
-        # send max speed
-        data[motor] = -1.0
-        data["e"] = 1
-        data_json=json.dumps(data)
-        # print (data_json)
-
-        # receive data
+        start_wait_time = 5.0
         start_time = time()
         start_receive_time = time()
         stopped = False
@@ -33,20 +27,20 @@ if __name__ == "__main__":
         first_measure_step = 0
         last_step = 0
         while not stopped:
-            if time() - start_time < 1.0:
+            if time() - start_time < start_wait_time:
                 data[motor] = 0.0
                 data["e"] = 1
-                data["md"] = 1
+                data["md"] = 0
                 data_json = json.dumps(data)
-            elif time() - start_time > 1.0 + full_gass_time:
+            elif time() - start_time > start_wait_time + full_gass_time:
                 data[motor] = 0.0
                 data["e"] = 0
                 data["md"] = 0
                 data_json = json.dumps(data)
             else:
-                data[motor] = 0.0
+                data[motor] = -0.2
                 data["e"] = 1
-                data["md"] = 1
+                data["md"] = 0
                 data_json = json.dumps(data)
             if ser.isOpen():
                 print("writing ", data)
@@ -57,7 +51,7 @@ if __name__ == "__main__":
             while time() - start_receive_time < 0.01:
                 pass
             start_receive_time = time()
-            stopped = time() - start_time > full_gass_time + 2.0
+            stopped = time() - start_time > full_gass_time + start_wait_time + 1.0
             while True:
                 if ser.inWaiting() > 0:
                     incoming_json = ser.readline().decode('utf-8')
@@ -90,7 +84,7 @@ if __name__ == "__main__":
         #     else:
         #         print ("opening error")
 
-        measurement_data.to_csv("pid.csv")
+        measurement_data.to_csv("pid-filtered.csv")
     except Exception as e:
         print(e)
         # stop motor
